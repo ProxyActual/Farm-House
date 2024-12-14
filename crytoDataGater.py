@@ -2,7 +2,7 @@ import yfinance as yf
 import datetime
 
 def get_bitcoin_price_at_datetime(date_time):
-    btc = yf.Ticker("BTC-USD")
+    btc = yf.Ticker("ETH-USD")
     hist = btc.history(start=date_time.strftime('%Y-%m-%d'), end=(date_time + datetime.timedelta(days=1)).strftime('%Y-%m-%d'))
     
     if not hist.empty:
