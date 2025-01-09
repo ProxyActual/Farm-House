@@ -14,13 +14,19 @@ class NeuralNetwork{
         };
 
         NeuralNetwork(int numberOfInputs, int numberOfOutputs);
+        NeuralNetwork(std::string str);
+        
         ~NeuralNetwork();
 
         void addNode();
 
-        void addConnection(int from, int to, double weight);
+        void addConnection(NN_Node* from, NN_Node* to, double weight);
 
         std::string toString();
+
+        void evolve();
+
+        NN_Node* getNodeById(int id);
 
     private:
         std::vector<NN_Node*> nodes_;
@@ -30,7 +36,8 @@ class NeuralNetwork{
 
         int getNextId();
 
-        NN_Node* getNodeById(int id);
 
         NodeType getNodeType(int id);
+
+        void addRandomConnections(double chance);
 };

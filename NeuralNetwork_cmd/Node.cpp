@@ -21,7 +21,7 @@ int NN_Node::getId() const {
 std::string NN_Node::toString() {
     std::string result = "";
     for(int i = 0; i < inputs_.size(); i++) {
-        result += "{From:" + std::to_string(inputs_[i]->getId()) + "To:" + std::to_string(getId()) + "Weight:" + std::to_string(inputWeights_[i]) + "}";
+        result += "{From:" + std::to_string(inputs_[i]->getId()) + " To:" + std::to_string(getId()) + " Weight:" + std::to_string(inputWeights_[i]) + "}\n";
     }
     return result;
 }
@@ -36,4 +36,13 @@ double NN_Node::getValue(){
     }
     calculatedValue_ = result;
     return result;
+}
+
+bool NN_Node::isConnected(NN_Node* node) {
+    for(int i = 0; i < inputs_.size(); i++) {
+        if(inputs_[i] == node) {
+            return true;
+        }
+    }
+    return false;
 }

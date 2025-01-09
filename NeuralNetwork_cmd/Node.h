@@ -20,6 +20,12 @@ class NN_Node
             calculatedValue_ = value;
         }
 
+        bool isEmpty() {
+            return inputs_.empty();
+        }
+
+        bool isConnected(NN_Node* node);
+
         std::string toString();
 
     private:

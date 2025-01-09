@@ -1,5 +1,6 @@
 #include "Network.h"
 #include <stdexcept>
+#include <sstream>
 
 NeuralNetwork::NeuralNetwork(int numberOfInputs, int numberOfOutputs) : numberOfInputs_(numberOfInputs), numberOfOutputs_(numberOfOutputs) {
     if(numberOfInputs < 1 || numberOfOutputs < 1) {
@@ -13,33 +14,70 @@ NeuralNetwork::NeuralNetwork(int numberOfInputs, int numberOfOutputs) : numberOf
     }
 }
 
+NeuralNetwork::NeuralNetwork(std::string data){
+    std::vector<std::string> lines;
+    std::string line;
+    std::istringstream stream(data);
+    while (std::getline(stream, line)) {
+        lines.push_back(line);
+    }
+
+    if (lines.size() < 2) {
+        throw std::invalid_argument("Invalid data format");
+    }
+
+    numberOfInputs_ = std::stoi(lines[0].substr(lines[0].find(":") + 1));
+    numberOfOutputs_ = std::stoi(lines[1].substr(lines[1].find(":") + 1));
+
+    std::string nodesIds = lines[2].substr(lines[2].find(":") + 1);
+    std::vector<int> nodesIdsVector;
+    std::istringstream nodesStream(nodesIds);
+    std::string nodeId;
+    while (std::getline(nodesStream, nodeId, ',')) {
+        nodesIdsVector.push_back(std::stoi(nodeId));
+    }
+
+    for(int id : nodesIdsVector) {
+        nodes_.push_back(new NN_Node(id));
+    }
+
+    for (long unsigned int i = 3; i < lines.size(); i++) {
+        std::string line = lines[i];
+        if (line.find("{") != std::string::npos) {
+            int from = std::stoi(line.substr(line.find(":") + 1, line.find(" ")));
+            int to = std::stoi(line.substr(line.find("To:") + 3, line.find(" ", line.find("To:") + 3)));
+            double weight = std::stod(line.substr(line.find("Weight:") + 7, line.find("}")));
+            addConnection(getNodeById(from), getNodeById(to), weight);
+        }
+    }
+
+}
+
 NeuralNetwork::~NeuralNetwork() {}
 
 void NeuralNetwork::addNode() {
     nodes_.push_back(new NN_Node(getNextId()));
 }
 
-void NeuralNetwork::addConnection(int from, int to, double weight) {        //from ----> to input flows to output
-    NN_Node* fromNode = getNodeById(from);
-    NN_Node* toNode = getNodeById(to);
-    if(fromNode == nullptr || toNode == nullptr) {
+void NeuralNetwork::addConnection(NN_Node* from, NN_Node* to, double weight) {        //from ----> to input flows to output
+    if(from == nullptr || to == nullptr) {
         throw std::invalid_argument("Node not found");
     }
-    if(getNodeType(to) == NodeType::INPUT) {
+    if(getNodeType(to->getId()) == NodeType::INPUT) {
         throw std::invalid_argument("Cannot connect to input node");
     }
-    fromNode->addOutput(toNode);
-    toNode->addInput(fromNode, weight);
+    from->addOutput(to);
+    to->addInput(from, weight);
 }
 
 int NeuralNetwork::getNextId() {
-    int usedIds[nodes_.size()];
-    for(int i = 0; i < nodes_.size(); i++) {
+    long unsigned int usedIds[nodes_.size()];
+    for(long unsigned int i = 0; i < nodes_.size(); i++) {
         usedIds[i] = nodes_[i]->getId();
     }
-    for(int i = 0; i < nodes_.size(); i++) {
+    for(long unsigned int i = 0; i < nodes_.size(); i++) {
         bool found = false;
-        for(int j = 0; j < nodes_.size(); j++) {
+        for(long unsigned int j = 0; j < nodes_.size(); j++) {
             if(i == usedIds[j]) {
                 found = true;
                 break;
@@ -49,10 +87,11 @@ int NeuralNetwork::getNextId() {
             return i;
         }
     }
+    return nodes_.size();
 }
 
 NN_Node* NeuralNetwork::getNodeById(int id) {
-    for(int i = 0; i < nodes_.size(); i++) {
+    for(long unsigned int i = 0; i < nodes_.size(); i++) {
         if(nodes_[i]->getId() == id) {
             return nodes_[i];
         }
@@ -67,5 +106,39 @@ NeuralNetwork::NodeType NeuralNetwork::getNodeType(int id) {
         return NodeType::OUTPUT;
     } else {
         return NodeType::MID;
+    }
+}
+
+std::string NeuralNetwork::toString() {
+    std::string str = "";
+    str += "Number_of_inputs:" + std::to_string(numberOfInputs_) + "\n";
+    str += "Number_of_outputs:" + std::to_string(numberOfOutputs_) + "\n";
+    str += "Nodes:";
+    for(NN_Node* node : nodes_) {
+        str += std::to_string(node->getId()) + ",";
+    }
+    str += "\n";
+    for(long unsigned int i = 0; i < nodes_.size(); i++) {
+        if(!nodes_[i]->isEmpty()) {
+            str += nodes_[i]->toString();            
+        }
+    }
+    return str;
+}
+
+void NeuralNetwork::evolve() {
+    addRandomConnections(0.5);
+}
+
+void NeuralNetwork::addRandomConnections(double chance){
+    for(NN_Node* from : nodes_) {
+        for(NN_Node* to : nodes_) {
+            if(from->isConnected(to) || getNodeType(to->getId()) == NodeType::INPUT) {
+                continue;
+            }
+            if((rand() % 100)/100.0 < chance) {
+                addConnection(from, to, (rand() % 100)/100.0);
+            }
+        }
     }
 }
