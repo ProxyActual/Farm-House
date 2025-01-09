@@ -2,6 +2,8 @@
 #include <stdexcept>
 #include <sstream>
 
+NeuralNetwork::NeuralNetwork() : numberOfInputs_(0), numberOfOutputs_(0) {}
+
 NeuralNetwork::NeuralNetwork(int numberOfInputs, int numberOfOutputs) : numberOfInputs_(numberOfInputs), numberOfOutputs_(numberOfOutputs) {
     if(numberOfInputs < 1 || numberOfOutputs < 1) {
         throw std::invalid_argument("Number of inputs and outputs must be greater than 0");

@@ -13,6 +13,7 @@ class NeuralNetwork{
             MID
         };
 
+        NeuralNetwork();
         NeuralNetwork(int numberOfInputs, int numberOfOutputs);
         NeuralNetwork(std::string str);
         
