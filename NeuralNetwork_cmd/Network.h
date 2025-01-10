@@ -37,8 +37,11 @@ class NeuralNetwork{
 
         int getNextId();
 
+        void RemoveNode(NN_Node* node);
 
         NodeType getNodeType(int id);
 
         void addRandomConnections(double chance);
+
+        void networkCleaning();
 };

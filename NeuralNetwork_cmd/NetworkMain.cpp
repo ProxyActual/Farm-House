@@ -38,16 +38,38 @@ void printHelp(){
     }
 }
 
-void parseCommand(int argc, char* argv[]){
+bool makeNetworkFromFile(std::string filename){
+    std::string fileData = "";
+    std::ifstream inFile(filename);
+    if (inFile) {
+        std::ostringstream ss;
+        ss << inFile.rdbuf();
+        fileData = ss.str();
+        inFile.close();
+    } else {
+        std::cout << "Failed to open file" << std::endl;
+        return false;
+    }
+    network_ = NeuralNetwork(fileData);
+    std::cout << "Loaded neural network from file" << std::endl;
+    NetworkCreated = true;
+    return true;
+}
+
+bool parseCommand(int argc, char* argv[]){
     if(argc <= 2){
         printHelp();
-        return;
+        return false;
     }
     for(int i = 1; i < argc; i++){
         if(std::string(argv[i]) == validCommands[static_cast<int>(Command::NEW_NN)]){
             if(i + 3 >= argc){
                 std::cout << "Invalid number of arguments" << std::endl;
-                return;
+                return false;
+            }
+            if(NetworkCreated){
+                std::cout << "Network already created" << std::endl;
+                return false;
             }
             i++;
             int numberOfInputs = std::stoi(argv[i]);
@@ -55,10 +77,6 @@ void parseCommand(int argc, char* argv[]){
             int numberOfOutputs = std::stoi(argv[i]);
             i++;
             int numberOfMid = std::stoi(argv[i]);
-            if(NetworkCreated){
-                std::cout << "Network already created" << std::endl;
-                return;
-            }
             network_ = NeuralNetwork(numberOfInputs, numberOfOutputs);
             for(int i = 0; i < numberOfMid; i++){
                 network_.addNode();
@@ -69,7 +87,7 @@ void parseCommand(int argc, char* argv[]){
 
         else if(std::string(argv[i]) == validCommands[static_cast<int>(Command::HELP)]){
             printHelp();
-            return;
+            return false;
         }
 
         else if(std::string(argv[i]) == validCommands[static_cast<int>(Command::EVOLVE)]){
@@ -80,40 +98,48 @@ void parseCommand(int argc, char* argv[]){
         else if(std::string(argv[i]) == validCommands[static_cast<int>(Command::LOAD_NN)]){
             if(i + 1 >= argc){
                 std::cout << "Invalid number of arguments" << std::endl;
-                return;
+                return false;
             }
             i++;
             std::string file = argv[i];
             if(NetworkCreated){
                 std::cout << "Network already created" << std::endl;
-                return;
+                return false;
             }
-            std::string fileData = "";
-            std::ifstream inFile(file);
-            if (inFile) {
-                std::ostringstream ss;
-                ss << inFile.rdbuf();
-                fileData = ss.str();
-                inFile.close();
-            } else {
-                std::cout << "Failed to open file" << std::endl;
-                return;
+            if(!makeNetworkFromFile(file)){
+                return false;
             }
-            network_ = NeuralNetwork(file);
-            std::cout << "Loaded neural network from file" << std::endl;
-            NetworkCreated = true;
         }
 
         else{
             std::cout << "Invalid command" << std::endl;
             printHelp();
-            return;
+            return false;
         }
+    }
+    return true;
+}
+
+void saveNetwork(){
+    std::ofstream outFile("network.txt");
+    if (outFile) {
+        outFile << network_.toString();
+        outFile.close();
+    } else {
+        std::cout << "Failed to save network" << std::endl;
     }
 }
 
 int main(int argc, char* argv[]) {
-    parseCommand(argc, argv);
+    if(!parseCommand(argc, argv)){
+        return 1;
+    }
+
+    if(evolveNetwork){
+        network_.evolve();
+    }
+
+    saveNetwork();
 
     return 0; 
 }

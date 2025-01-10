@@ -5,6 +5,7 @@
 NeuralNetwork::NeuralNetwork() : numberOfInputs_(0), numberOfOutputs_(0) {}
 
 NeuralNetwork::NeuralNetwork(int numberOfInputs, int numberOfOutputs) : numberOfInputs_(numberOfInputs), numberOfOutputs_(numberOfOutputs) {
+    printf("Creating network with %d inputs and %d outputs\n", numberOfInputs, numberOfOutputs);
     if(numberOfInputs < 1 || numberOfOutputs < 1) {
         throw std::invalid_argument("Number of inputs and outputs must be greater than 0");
     }
@@ -68,8 +69,11 @@ void NeuralNetwork::addConnection(NN_Node* from, NN_Node* to, double weight) {  
     if(getNodeType(to->getId()) == NodeType::INPUT) {
         throw std::invalid_argument("Cannot connect to input node");
     }
-    from->addOutput(to);
     to->addInput(from, weight);
+
+    for(NN_Node* node : nodes_) {
+        node->clearCheckedNode();
+    }
 }
 
 int NeuralNetwork::getNextId() {
@@ -129,18 +133,52 @@ std::string NeuralNetwork::toString() {
 }
 
 void NeuralNetwork::evolve() {
-    addRandomConnections(0.5);
+    addRandomConnections(.0025);
+
+    networkCleaning();
 }
 
 void NeuralNetwork::addRandomConnections(double chance){
-    for(NN_Node* from : nodes_) {
-        for(NN_Node* to : nodes_) {
+    for(int fromIDX = (int)nodes_.size()-1; fromIDX >= 0; fromIDX--) {
+        for(int toIDX = (int)nodes_.size()-1; toIDX >= 0; toIDX--) {
+            NN_Node* from = nodes_[fromIDX];
+            NN_Node* to = nodes_[toIDX];
+            //printf("Attempting %d -> %d\n", from->getId(), to->getId());
             if(from->isConnected(to) || getNodeType(to->getId()) == NodeType::INPUT) {
                 continue;
             }
             if((rand() % 100)/100.0 < chance) {
+                printf("adding connection from %d to %d\n", from->getId(), to->getId());
                 addConnection(from, to, (rand() % 100)/100.0);
             }
+        }
+    }
+}
+
+void NeuralNetwork::RemoveNode(NN_Node* node) {
+    for(NN_Node* n : nodes_) {
+        n->removeInput(node);
+    }
+    for(long unsigned int i = 0; i < nodes_.size(); i++) {
+        if(nodes_[i] == node) {
+            nodes_.erase(nodes_.begin() + i);
+            delete node;
+            return;
+        }
+    }
+}
+
+void NeuralNetwork::networkCleaning() {
+    for(int i = numberOfInputs_; i < numberOfInputs_ + numberOfOutputs_; i++) {
+        nodes_[i]->getValue();
+    }
+
+    for(long unsigned int i = numberOfInputs_ + numberOfOutputs_; i < nodes_.size(); i++) {
+        int val = nodes_[i]->getTouched();
+        if(val == 0) {
+            printf("Removed Node %d unused\n", nodes_[i]->getId());
+            RemoveNode(nodes_[i]);
+            i--;
         }
     }
 }
